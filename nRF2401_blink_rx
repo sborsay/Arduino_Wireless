@@ -1,0 +1,53 @@
+//Maniacbug but are now maintained by TMRh20
+//modified by sborsay
+
+#include  <SPI.h>
+#include "RF24.h"
+
+byte msg[1];
+RF24 radio(7,8);
+const uint64_t pipe = 0x8675309ABCll;
+int led = 5;
+
+
+
+
+void setup(void)
+{
+  
+  Serial.begin(115200);
+  Serial.println("In Setup");
+  pinMode(led, OUTPUT);
+  radio.begin();
+  radio.openReadingPipe(1,pipe);
+  radio.startListening();
+ }
+
+void loop(void)
+{
+  
+  if(radio.available())
+  {
+  
+    radio.read(msg, sizeof(msg));
+    Serial.println(msg[0]);
+    
+  if(msg[0] == 111)
+  {
+    
+  Serial.println("Turining light on");
+  digitalWrite(led, HIGH);
+  delay(2000);
+  }
+  
+ else if(msg[0] == 0)
+  {
+   Serial.println("Turining light off");
+  digitalWrite(led, LOW);
+  delay(2000);
+  }
+  
+  else Serial.println("received no message");
+
+  } 
+}
