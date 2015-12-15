@@ -1,0 +1,42 @@
+#include <VirtualWire.h>
+
+int RF_RX_PIN = 11; 
+const int dataPoints = 6;
+double buf[dataPoints];  //wont get last datapoint
+                          //unless overshoot buffer by 1
+
+byte bufLength = dataPoints  * sizeof(double); //cant handle 6
+
+void setup()
+{
+  Serial.begin(9600);
+  Serial.println("In setup \n");
+  vw_set_rx_pin(RF_RX_PIN);  // Setup receive pin.
+  vw_setup(2000); // Transmission speed in bits per second.
+  vw_rx_start(); // Start the PLL receiver..
+}
+ 
+void loop()
+{
+
+// copies messsage to buffer and checks if checksum true
+  if(vw_get_message((byte *) buf,  &bufLength )) 
+  {
+
+       Serial.print("wirelessely received Humidity%: ");
+       Serial.println(buf[0]);
+       Serial.print("wirelessely received temp in Cel: ");
+       Serial.println(buf[1]);
+       Serial.print("wirelessely received temp in farhenheit: ");
+       Serial.println(buf[2]);
+       Serial.print("wirelessely received temp in kelvin: ");
+       Serial.println(buf[3]);
+       Serial.print("wirelessely received dew point: ");
+       Serial.println(buf[4]);
+       Serial.print("wirelessely received fast dew point: ");
+       Serial.println(buf[5]);
+        delay(1000);
+        Serial.println("\n");
+  }
+}
+    
