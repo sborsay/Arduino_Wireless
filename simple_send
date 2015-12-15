@@ -1,0 +1,22 @@
+#include<VirtualWire.h>
+
+
+
+void setup()
+{
+  
+  vw_setup(2000);
+  
+}
+
+
+void loop()
+{
+  
+  char message[] = "Hello World";
+  
+  vw_send( (uint8_t *) message, strlen(message));
+  
+  vw_wait_tx();
+  
+}
