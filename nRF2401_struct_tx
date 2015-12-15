@@ -1,0 +1,128 @@
+/*####################################################################
+ FILE: dht11_functions.pde - DHT11 Usage Demo.
+ VERSION: 2S0A
+
+ PURPOSE: Measure and return temperature & Humidity. Additionally provides conversions.
+
+ LICENSE: GPL v3 (http://www.gnu.org/licenses/gpl.html)
+ GET UPDATES: https://www.virtuabotix.com/
+
+      --##--##--##--##--##--##--##--##--##--##--
+      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+      | ##  ##  ##  ##  ##  ##  ##  ##  ##  ## |
+      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+      | ##  ##  ##  ##  ##  ##  ##  ##  ##  ## |
+      ##  ##  ##  ## DHT11 SENSOR ##  ##  ##  ##
+      ##  ##  ##  ##  ##FRONT ##  ##  ##  ##  ##
+      | ##  ##  ##  ##  ##  ##  ##  ##  ##  ## |
+      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+      | ##  ##  ##  ##  ##  ##  ##  ##  ##  ## |
+      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+      --##--##--##--##--##--##--##--##--##--##--
+          ||       ||          || (Not    ||
+          ||       ||          || Used)   ||
+        VDD(5V)   Readout(I/O)          Ground
+
+  HISTORY:
+  Joseph Dattilo (Virtuabotix LLC) - Version 2S0A (27 May 12)
+  -Rewritten to with more powerful Versalino functionality
+  Joseph Dattilo (Virtuabotix LLC) - Version 0.4.5 (11/11/11)
+  -Made Library Arduino 1.0 Compatible
+  Joseph Dattilo (Virtuabotix LLC) - Version 0.4.0 (06/11/11)
+  -Fixed bugs (squish)
+  Mod by Rob Tillaart - Version 0.3 (28/03/2011)
+  Mod by SimKard - Version 0.2 (24/11/2010)
+ George Hadjikyriacou - Original version (??)
+#######################################################################*/
+
+//modified by sborsay for Udemy class
+
+#include <dht11.h>
+#include <SPI.h>
+#include "RF24.h"
+
+dht11 DHT11;  
+RF24 radio(7,8); //constructor
+
+
+struct dataStruct
+{
+  float  rf_humidity;
+  float  rf_temp_cel;
+  double rf_temp_fehr;
+  double rf_temp_kelv;
+  double rf_dewPoint;
+  double rf_dewPointFast;
+  int    counter;
+} myData;
+
+
+void setup()
+{
+  DHT11.attach(2);
+  Serial.begin(9600);  //radio can operate at 9600 but dht11 
+                        //cant operate at 115200
+  Serial.println("DHT11 TEST PROGRAM ");
+  Serial.print("LIBRARY VERSION: ");
+  Serial.println(DHT11LIB_VERSION);
+  radio.begin();
+  radio.openWritingPipe(0x8675309abcll);
+  //radio.openWritingPipe must come after radio.begin
+  radio.enableDynamicPayloads();
+}
+
+void loop()
+{
+
+  Serial.println("\n");
+  Serial.print("LIBRAxxxvvvRY VERSION: ");
+  int chk = DHT11.read();
+
+  Serial.print("Read sensor: ");
+  switch (chk)
+  {
+    case 0: Serial.println("OK"); break;
+    case -1: Serial.println("Checksum error"); break;
+    case -2: Serial.println("Time out error"); break;
+    default: Serial.println("Unknown error"); break;
+  }
+
+  Serial.print("Humidity (%): ");
+  Serial.println((float)DHT11.humidity, DEC);
+  myData.rf_humidity = (float)DHT11.humidity;
+
+  Serial.print("Temperature (°C): ");
+  Serial.println(myData.rf_temp_cel);
+  myData.rf_temp_cel = (float)DHT11.temperature;
+
+  Serial.print("Temperature (°F): ");
+  Serial.println( myData.rf_temp_fehr);
+  myData.rf_temp_fehr = DHT11.fahrenheit();
+
+  Serial.print("Temperature (°K): ");
+  Serial.println(DHT11.kelvin(), DEC); 
+  myData.rf_temp_kelv = DHT11.kelvin();
+
+  Serial.print("Dew Point (°C): ");
+  Serial.println(DHT11.dewPoint(), DEC);
+  myData.rf_dewPoint = DHT11.dewPoint();
+
+  Serial.print("Dew PointFast (°C): ");
+  Serial.println(DHT11.dewPointFast(), DEC);
+  myData.rf_dewPointFast = DHT11.dewPointFast();
+  
+  Serial.println("Now sending");
+      
+   
+     if (!radio.write( &myData, sizeof(myData) ))
+     {
+       Serial.println("failed");
+     }
+        
+  myData.counter += 1;
+  delay(2000);
+}
