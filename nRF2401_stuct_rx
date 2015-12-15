@@ -1,0 +1,66 @@
+//modifed by sborsay
+
+#include <SPI.h>
+#include "RF24.h"
+  
+RF24 radio(7,8); //constructor
+
+struct dataStruct
+{
+  float  rf_humidity;
+  float  rf_temp_cel;
+  double rf_temp_fehr;
+  double rf_temp_kelv;
+  double rf_dewPoint;
+  double rf_dewPointFast;
+  int    counter;
+} myData;
+
+
+void setup()
+{
+
+  Serial.begin(9600);  //radio can operate at 9600 but dht11                     //cant operate at 115200
+  Serial.println("in setup receive dht ");
+  radio.begin();
+  radio.openReadingPipe(1,0x8675309abcll);
+  //radio.openWritingPipe must come after radio.begin
+  radio.startListening();
+  radio.enableDynamicPayloads();
+}
+
+void loop()
+{
+  Serial.println("\n");
+  Serial.print("in loop: ");
+  
+ // 
+  //radio.read( &myData, sizeof(myData) );
+  while (radio.available()) 
+    {                          // While there is data ready
+      radio.read( &myData, sizeof(myData) );             // Get the payload
+    }
+  
+ //radio.stopListening(); 
+  
+  // Spew it
+    Serial.print("Humidity (%): ");
+    Serial.println(myData.rf_humidity);
+    Serial.print("Temperature (°C): ");
+    Serial.println(myData.rf_temp_cel);
+    Serial.print("Temperature (°F): ");
+    Serial.println(myData.rf_temp_fehr);
+    Serial.print("Temperature (°K): ");
+    Serial.println(myData.rf_temp_kelv);
+    Serial.print("Dew Point (°C): ");
+    Serial.println(myData.rf_dewPoint);
+    Serial.print("fast Dew Point (°C): ");
+    Serial.println(myData.rf_dewPointFast);
+    Serial.print("counter= ");
+    Serial.println(myData.counter);
+  
+
+   
+  delay(2000);
+  
+}
