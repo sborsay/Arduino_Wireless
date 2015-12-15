@@ -1,0 +1,114 @@
+// Micro SD TF Card Memory Shield Module SPI For Arduino
+// ** MOSI - pin 11
+ //** MISO - pin 12
+// ** CLK - pin 13
+// ** CS - pin 4
+
+
+
+#include <VirtualWire.h>
+#include <SPI.h>
+#include <SD.h>
+
+const int chipSelect = 4;
+String dataString;
+File dataFile;
+
+//File dataFile;
+//String dataString;
+
+int RF_RX_PIN = 7; 
+const int dataPoints = 6;
+double buf[dataPoints];  //wont get last datapoint
+                          //unless overshoot buffer by 1
+
+byte bufLength = dataPoints  * sizeof(double); //cant handle 6
+
+void setup()
+{
+  Serial.begin(9600);
+  Serial.println("In setup \n");
+  vw_set_rx_pin(RF_RX_PIN);  // Setup receive pin.
+  vw_setup(2000); // Transmission speed in bits per second.
+  vw_rx_start(); // Start the PLL receiver..
+  Serial.print("Initializing SD card...");
+  pinMode(10, OUTPUT);  //wont open file without, pin 53 on mega
+  
+   if (!SD.begin(chipSelect))
+   {
+      Serial.println("Card failed, or not present");
+      return; //end program
+    }
+  Serial.println("card initialized.");
+}
+
+ 
+void loop()
+{
+
+// copies messsage to buffer and checks if checksum true
+  if(vw_get_message((byte *) buf,  &bufLength )) 
+  {
+    
+    dataFile = SD.open("datalog.txt", FILE_WRITE);
+    dataFile.println("\n");
+
+       Serial.print("wirelessely received Humidity%: ");
+       Serial.println(buf[0]);
+       dataString = "Humidity: ";
+       dataString += String(buf[0]);
+       dataString += ", ";   
+       dataFile.println(dataString);
+       dataFile.close();
+       
+       dataFile = SD.open("datalog.txt", FILE_WRITE);
+       Serial.print("wirelessely received temp in Cel: ");
+       Serial.println(buf[1]);
+       dataString = "temp in Cel: ";
+       dataString += String(buf[1]);
+       dataString += ", ";
+       dataFile.println(dataString);
+       dataFile.close();
+       
+       dataFile = SD.open("datalog.txt", FILE_WRITE);
+       Serial.print("wirelessely received temp in farhenheit: ");
+       Serial.println(buf[2]);
+       dataString = "temp in Fehr: ";
+       dataString += String(buf[2]);
+       dataString += ", ";
+       dataFile.println(dataString);
+       dataFile.close();
+       
+       dataFile = SD.open("datalog.txt", FILE_WRITE);
+       Serial.print("wirelessely received temp in kelvin: ");
+       Serial.println(buf[3]);
+       dataString = "temp in kelvin: ";
+       dataString += String(buf[3]);
+       dataString += ", ";
+       dataFile.println(dataString);
+       dataFile.close();
+       
+       dataFile = SD.open("datalog.txt", FILE_WRITE);
+       Serial.print("wirelessely received dew point: ");
+       Serial.println(buf[4]);
+       dataString = "dew point: ";
+       dataString += String(buf[4]);
+       dataString += ", ";
+       dataFile.println(dataString);
+       dataFile.close();
+       
+       dataFile = SD.open("datalog.txt", FILE_WRITE);
+       Serial.print("wirelessely received fast dew point: ");
+       Serial.println(buf[5]);
+       dataString = "fast dew point: ";
+       dataString += String(buf[5]);
+       dataString += ", ";
+       dataFile.println(dataString);
+       dataFile.close();
+       
+
+        delay(1000);
+        Serial.println("\n");
+  }
+}
+    
