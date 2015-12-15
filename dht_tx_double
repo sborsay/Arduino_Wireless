@@ -1,0 +1,65 @@
+#include <dht11.h>
+#include <VirtualWire.h>
+
+int RF_TX_PIN = 12;
+dht11 DHT11;
+
+const int dataPoints = 5;
+double sensorData[dataPoints];
+byte msgSensor = (dataPoints +1)  * sizeof(double);
+
+void setup()
+{
+  vw_set_tx_pin(RF_TX_PIN); // Setup transmit pin
+  vw_setup(2000); // Transmission speed in bits per second.
+  DHT11.attach(2);
+  Serial.begin(9600);
+  Serial.println("DHT11 TEST PROGRAM ");
+  Serial.println("LIBRARY VERSION: ");
+  Serial.println(DHT11LIB_VERSION);
+}
+
+void loop()
+{
+  Serial.println("\n");
+
+  int chk = DHT11.read();
+
+  Serial.print("Read sensor: ");
+  
+  switch (chk)
+  {
+    case 0:  Serial.println("OK"); break;
+    case -1: Serial.println("Checksum error"); break;
+    case -2: Serial.println("Time out error"); break;
+    default: Serial.println("Unknown error"); break;
+  }
+
+  Serial.print("Humidity (%): ");
+  Serial.println(DHT11.humidity, DEC);
+  sensorData[0] = (double) DHT11.humidity;
+
+  Serial.print("Temperature (°C): ");
+  Serial.println(DHT11.temperature, DEC);
+  sensorData[1] = (double) DHT11.temperature;
+
+  Serial.print("Temperature (°F): ");
+  Serial.println(DHT11.fahrenheit(), DEC);
+  sensorData[2] = (double) DHT11.fahrenheit();
+
+  Serial.print("Temperature (°K): ");
+  Serial.println(DHT11.kelvin(), DEC);
+  sensorData[3] = (double) DHT11.kelvin();
+
+  Serial.print("Dew point (°C): ");
+  Serial.println(DHT11.dewPoint(), DEC);
+  sensorData[4] = (double) DHT11.dewPoint();
+
+  Serial.print("Dew PointFast (°C): ");
+  Serial.println(DHT11.dewPointFast(), DEC);
+  sensorData[5] = (double) DHT11.dewPointFast();
+
+  vw_send((byte *) sensorData, msgSensor);
+
+  delay(2000);
+}
