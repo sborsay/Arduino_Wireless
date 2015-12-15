@@ -1,0 +1,33 @@
+#include<VirtualWire.h>
+
+int Rf_rx_pin = 11;
+
+void setup()
+{
+
+Serial.begin(9600);
+Serial.println("in setup");
+vw_set_rx_pin(Rf_rx_pin);
+vw_setup(2000);
+vw_rx_start();
+}
+
+void loop()
+{
+  
+  byte msg[VW_MAX_MESSAGE_LEN];
+  byte buflen = VW_MAX_MESSAGE_LEN;
+  
+  if(vw_get_message(msg, &buflen))
+    {
+      Serial.println("received Humidity of:  ");
+      
+      for(int i = 0; i < buflen -1; ++i)
+      {
+        Serial.print((msg[i]));
+        Serial.print("");
+      }
+      delay(1000);
+      Serial.println("");
+    }
+}
