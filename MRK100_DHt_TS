@@ -1,0 +1,171 @@
+/*
+This sketch is a combination of ADAFruits DHT sketch, WiFi101 Webclient
+and The arduino example from ThingSpeak
+Modified by Stephen Borsay, feel free to use
+ */
+
+
+#include <SPI.h>
+#include <WiFi101.h>
+#include "DHT.h"
+
+
+#define DHTPIN 1    // what digital pin we're connected to, pin1 is 5th pin from end
+
+// Uncomment whatever DHT sensor type you're using!
+#define DHTTYPE DHT11  // DHT 11
+//#define DHTTYPE DHT21  // DHT 21
+//#define DHTTYPE DHT22  // DHT 22
+
+DHT dht(DHTPIN,DHTTYPE);
+
+String apiKey ="YourApiKeyHere"; // api from ThingSpeak
+
+char ssid[] = "YourSSIDHERE"; //  your network SSID (name)
+char pass[] = "YourPasswordHere";    // your network password (use for WPA, or use as key for WEP)
+int keyIndex = 0;            // your network key Index number (needed only for WEP)
+
+//#define WEBSITE "api.thingspeak.com"
+
+int status = WL_IDLE_STATUS;
+// if you don't want to use DNS (and reduce your sketch size)
+// use the numeric IP instead of the name for the server:
+//IPAddress server(74,125,232,128);  // numeric IP for Google (no DNS)
+char server[] = "api.thingspeak.com";    // name address for Google (using DNS)
+
+// Initialize the Ethernet client library
+// with the IP address and port of the server
+// that you want to connect to (port 80 is default for HTTP):
+WiFiClient client;
+
+void setup() {
+  //Initialize serial and wait for port to open:
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+
+  // check for the presence of the shield:
+  if (WiFi.status() == WL_NO_SHIELD) {
+    Serial.println("WiFi shield not present");
+    // don't continue:
+    while (true);
+  }
+
+  // attempt to connect to Wifi network:
+  while (status != WL_CONNECTED) 
+  {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+    status = WiFi.begin(ssid, pass);
+
+    // wait 10 seconds for connection:
+    delay(10000);
+  }
+  
+  Serial.println("Connected to wifi");
+  printWifiStatus();
+  
+}
+
+void loop() {
+
+   // Wait a few seconds between measurements.
+  delay(2000);
+
+  //prefer to use float, not int,  but package size or float conversion isnt working
+  //will revise in future with a brute force string fuction or float conversion function
+
+  int h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  int t = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  int f = dht.readTemperature(true);
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t) || isnan(f))
+  {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // Compute heat index in Fahrenheit (the default)
+  int hif = dht.computeHeatIndex(f, h);
+  // Compute heat index in Celsius (isFahreheit = false)
+  int hic = dht.computeHeatIndex(t, h, false);
+
+  Serial.print("Humidity: ");
+  Serial.print(h);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(t);
+  Serial.print(" *C ");
+  Serial.print(f);
+  Serial.print(" *F\t");
+  Serial.print("Heat index: ");
+  Serial.print(hic);
+  Serial.print(" *C ");
+  Serial.print(hif);
+  Serial.println(" *F\n");
+
+    Serial.println("\nStarting connection to server..."); 
+  // if you get a connection, report back via serial:
+  if (client.connect(server, 80)) {
+    Serial.println("connected to server");
+
+
+          client.print(F("POST "));
+          client.print("/update?key=apiKey&field1=" 
+          +               (String) h
+          +  "&field2=" +(String) t
+          +  "&field3=" +(String) f
+          +  "&field4=" +(String) hic
+          +  "&field5=" +(String) hif
+                                   );
+                                      
+          String tsData = "field1="   //need the length of our data string to give to ThingSpeak
+          +             (String)  h
+          +  "&field2=" +(String) t
+          +  "&field3=" +(String) f
+          +  "&field4=" +(String) hic
+          +  "&field5=" +(String) hif
+        ; 
+
+
+          client.print("POST /update HTTP/1.1\n");  //alternate sans 'update'client.print(F(" HTTP/1.1\r\n"));
+          client.print("Host: api.thingspeak.com\n");
+          client.print("Connection: close\n");
+          client.print("X-THINGSPEAKAPIKEY: " + apiKey + "\n");
+          client.print("Content-Type: application/x-www-form-urlencoded\n");
+          client.print("Content-Length: ");
+          client.print(tsData.length());  //send out data string legth to ts
+          client.print("\n\n");
+          client.print(tsData);
+          client.stop();
+          delay(1000);
+    } 
+
+}
+
+
+void printWifiStatus() {
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your WiFi shield's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
+
+
+
+
