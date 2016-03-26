@@ -45,6 +45,19 @@
 #include <SPI.h>
 #include "RF24.h"
 
+// * CE and CSN are configurable.
+//*  here CE is on 7 CSN on 8
+// * | PIN | NRF24L01 | Arduino UNO 
+// * |-----|----------|-------------|
+// * |  1  |   GND    |   GND       |    
+// * |  2  |   VCC    |   3.3V      |    
+// * |  3  |   CE     |   digIO 7   |    
+// * |  4  |   CSN    |   digIO 8   |    
+// * |  5  |   SCK    |   digIO 13  |     
+// * |  6  |   MOSI   |   digIO 11  |     
+// * |  7  |   MISO   |   digIO 12  |     
+// * |  8  |   IRQ    |      -      |    
+
 dht11 DHT11;  
 RF24 radio(7,8); //constructor
 
