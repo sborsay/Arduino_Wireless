@@ -1,5 +1,7 @@
 //Maniacbug but are now maintained by TMRh20
 //modified by sborsay
+//download the correct RF24.h library here you need this version 
+//https://tmrh20.github.io/RF24/index.html
 
 #include  <SPI.h>
 #include "RF24.h"
