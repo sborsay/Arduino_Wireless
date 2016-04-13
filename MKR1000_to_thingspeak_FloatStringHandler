@@ -17,13 +17,12 @@ added a brute force float string handler to address package size issue
 
 DHT dht(DHTPIN,DHTTYPE);
 
-String apiKey ="PX85YJAUXR4JRG1A"; // api from ThingSpeak
+String apiKey ="Your API key"; // api from ThingSpeak
 
-char ssid[] = "Cascade Cigar WiFi"; //  your network SSID (name)
-char pass[] = "Cascade-Cigar";    //your network password
+char ssid[] = "your ssid"; //  your network SSID (name)
+char pass[] = "your password";    //your network password
 int keyIndex = 0;     // your network key Index number (needed only for WEP)
 
-//#define WEBSITE "api.thingspeak.com"
 
 int status = WL_IDLE_STATUS;
 // if you don't want to use DNS (and reduce your sketch size)
@@ -114,13 +113,14 @@ void loop() {
   // if you get a connection, report back via serial:
   if (client.connect(server, 80)) {
     Serial.println("connected to server");
-  //  Serial.println(f);
- // Serial.println(f*100);
+
+// brute force string handling converter for int to float
+//normal flote data types wont work, feel free to try though
 
  int h1 =  (h * 100);
  int t1 =  (t * 100);
  int f1 =  (f * 100);
- //Serial.println(x);
+
 
           client.print(F("POST "));
           client.print("/update?key=apiKey&field1=" 
