@@ -1,0 +1,118 @@
+/*
+  digital input, digital output, serial output
+
+ Reads an analog input pin, maps the result to a range from 0 to 255
+ and uses the result to set the pulsewidth modulation (PWM) of an output pin.
+ Also prints the results to the serial monitor.
+
+ The circuit:
+ * potentiometer connected to analog pin 0.
+   Center pin of the potentiometer goes to the analog pin.
+   side pins of the potentiometer go to +5V and ground
+ * LED connected from digital pin 9 to ground
+
+ created 29 Dec. 2008
+ modified 9 Apr 2012
+ by Tom Igoe
+ modified July 2016
+ Stephen Borsay
+
+ This example code is in the public domain.
+
+ */
+
+// These constants won't change.  They're used to give names
+// to the pins used:
+
+const int analogPotPin   = A0;  // Analog input pin that the potentiometer is attached to
+const int digitalOutPin1 = 3; // digital output pin that the LED is attached to
+const int digitalOutPin2 = 5; // digital output pin that the LED is attached to
+const int digitalOutPin3 = 6; // digital output pin that the LED is attached to
+const int digitalOutPin4 = 9; // digital output pin that the LED is attached to
+const int digitalOutPin5 = 10; // digital output pin that the LED is attached to
+
+int sensorValue = 0;        // value read from the pot
+int outputValue = 0;        // value output to the PWM (analog out)
+
+void setup()
+{
+  // initialize serial communications at 9600 bps:
+  Serial.begin(9600);
+  pinMode(analogPotPin,  INPUT);
+  pinMode(digitalOutPin1, OUTPUT); //if Pinmode isnt set pins wont turn off
+  pinMode(digitalOutPin2, OUTPUT);
+  pinMode(digitalOutPin3, OUTPUT);
+  pinMode(digitalOutPin4, OUTPUT);
+  pinMode(digitalOutPin5, OUTPUT);
+  
+}
+
+void loop() {
+
+  // read the analog in value:
+  sensorValue = analogRead(analogPotPin);
+  // map it to the range of the analog out:
+  outputValue = map(sensorValue, 0, 1023, 0, 255);
+  // change the analog out value:
+ // analogWrite(analogOutPin, outputValue);
+
+ //1023(normalized range) / 5 led pins = 204 range per threshold
+
+  if(sensorValue <= 206)
+  {
+    digitalWrite(digitalOutPin2, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin3, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin4, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin5, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin1, HIGH); //write new state
+    Serial.println("Less then 206\n");    
+  }
+
+  
+  else if(sensorValue >= 206 && sensorValue < 411)
+  {
+    digitalWrite(digitalOutPin1, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin3, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin4, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin5, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin2, HIGH);
+    Serial.println("Between 206 and 410\n");    
+  }
+
+  else if(sensorValue >= 411 && sensorValue < 615)
+  {
+    digitalWrite(digitalOutPin1, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin2, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin4, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin5, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin3,HIGH);
+    Serial.println("Between 411 and 614\n");    
+  }
+
+   else if(sensorValue >= 615 && sensorValue < 820)
+   {
+    digitalWrite(digitalOutPin1, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin2, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin3, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin5, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin4,HIGH);
+    Serial.println("Between 615 and 819\n");    
+   }
+
+    else if(sensorValue >= 820)
+    {
+     digitalWrite(digitalOutPin1, LOW);        //turn off previous state
+     digitalWrite(digitalOutPin2, LOW);        //turn off previous state
+     digitalWrite(digitalOutPin3, LOW);        //turn off previous state
+     digitalWrite(digitalOutPin4, LOW);        //turn off previous state
+     digitalWrite(digitalOutPin5,HIGH);
+     Serial.println("greater then 819\n");    
+    }
+
+  // print the results to the serial monitor:
+  Serial.print("sensor = ");
+  Serial.print(sensorValue);
+  Serial.print("\t output = ");
+  Serial.println(outputValue);
+
+}
