@@ -1,0 +1,210 @@
+/*
+  digital input, digital output, serial output
+
+ Reads an analog input pin, maps the result to a range from 0 to 255
+ and uses the result to set the pulsewidth modulation (PWM) of an output pin.
+ Also prints the results to the serial monitor.
+
+ The circuit:
+ * potentiometer connected to analog pin 0.
+   Center pin of the potentiometer goes to the analog pin.
+   side pins of the potentiometer go to +5V and ground
+
+ created 29 Dec. 2008
+ modified 9 Apr 2012
+ by Tom Igoe
+ modified for Intel Edison and ThingSpeak June 2016
+ by Stephen Borsay
+
+ This example code is in the public domain.
+
+ */
+
+#include <SPI.h>
+#include <WiFi.h> //intel wifi library
+
+// These constants won't change.  They're used to give names
+// to the pins used:
+
+const int analogPotPin   = A0;  // Analog input pin that the potentiometer is attached to
+const int digitalOutPin1 = 3; // digital output pin that the LED is attached to
+const int digitalOutPin2 = 5; // digital output pin that the LED is attached to
+const int digitalOutPin3 = 6; // digital output pin that the LED is attached to
+const int digitalOutPin4 = 9; // digital output pin that the LED is attached to
+const int digitalOutPin5 = 10; // digital output pin that the LED is attached to
+
+const char WEBSITE[] = "api.thingspeak.com"; 
+
+String apiKey ="<YOUR_THINGSPEAK_APYKEY_HERE>"; // api from ThingSpeak
+char ssid[] = "<YOUR-SSID_NAME_HERE>";          //  your network SSID (name) 
+char pass[] = "<YOUR_PASSWORD_HERE>";     // your network password (use for WPA, or use as key for WEP)
+int keyIndex = 0;                  // your network key Index number (needed only for WEP)
+
+int status = WL_IDLE_STATUS;
+int sensorValue = 0;        // value read from the pot
+int outputValue = 0;        // value output to the PWM (analog out)
+
+void setup()
+{
+  // initialize serial communications at 9600 bps:
+  Serial.begin(9600);
+  pinMode(analogPotPin,  INPUT);
+  pinMode(digitalOutPin1, OUTPUT); //if Pinmode isnt set pins wont turn off
+  pinMode(digitalOutPin2, OUTPUT);
+  pinMode(digitalOutPin3, OUTPUT);
+  pinMode(digitalOutPin4, OUTPUT);
+  pinMode(digitalOutPin5, OUTPUT);
+ 
+
+   if (WiFi.status() == WL_NO_SHIELD)
+   {
+    Serial.println("WiFi shield not present"); 
+    // don't continue:
+    while(true);
+  } 
+
+  String fv = WiFi.firmwareVersion();
+  if( fv != "1.1.0" )
+    Serial.println("Please upgrade the firmware");
+  
+  // attempt to connect to Wifi network:
+  while (status != WL_CONNECTED)
+  { 
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:    
+    status = WiFi.begin(ssid, pass);
+  
+    // wait 10 seconds for connection:
+    delay(10000);
+  } 
+  Serial.println("Connected to wifi");
+  printWifiStatus(); //references function at bottom of sketch
+  
+  Serial.println("\nStarting connection to server...");
+}
+
+void loop() {
+
+   WiFiClient client;  //instancied objet locally so class values will change
+  // read the analog in value:
+  sensorValue = analogRead(analogPotPin);
+  // map it to the range of the analog out:
+  outputValue = map(sensorValue, 0, 1023, 0, 255);
+  // change the analog out value:
+ // analogWrite(analogOutPin, outputValue);
+
+ //1023(normalized range) / 5 led pins = 204 range per threshold
+
+  if(sensorValue <= 206)
+  {
+    digitalWrite(digitalOutPin2, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin3, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin4, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin5, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin1, HIGH); //write new state
+    Serial.println("Less then 206\n");    
+  }
+
+  
+  else if(sensorValue >= 206 && sensorValue < 411)
+  {
+    digitalWrite(digitalOutPin1, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin3, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin4, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin5, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin2, HIGH);
+    Serial.println("Between 206 and 410\n");    
+  }
+
+  else if(sensorValue >= 411 && sensorValue < 615)
+  {
+    digitalWrite(digitalOutPin1, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin2, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin4, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin5, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin3,HIGH);
+    Serial.println("Between 411 and 614\n");    
+  }
+
+   else if(sensorValue >= 615 && sensorValue < 820)
+   {
+    digitalWrite(digitalOutPin1, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin2, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin3, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin5, LOW);        //turn off previous state
+    digitalWrite(digitalOutPin4,HIGH);
+    Serial.println("Between 615 and 819\n");    
+   }
+
+    else if(sensorValue >= 820)
+    {
+     digitalWrite(digitalOutPin1, LOW);        //turn off previous state
+     digitalWrite(digitalOutPin2, LOW);        //turn off previous state
+     digitalWrite(digitalOutPin3, LOW);        //turn off previous state
+     digitalWrite(digitalOutPin4, LOW);        //turn off previous state
+     digitalWrite(digitalOutPin5,HIGH);
+     Serial.println("greater then 819\n");    
+    }
+
+  // print the results to the serial monitor:
+  Serial.print("sensor = ");
+  Serial.print(sensorValue);
+  Serial.print("\t output = ");
+  Serial.println(outputValue);
+
+  if (client.connect(WEBSITE, 80))
+{
+   Serial.println("connected to server");
+
+
+          client.print(F("POST "));
+          client.print("/update?key=apiKey&field1=" 
+          +              (String) sensorValue
+      //  +  "&field2=" +(String) sensorValue2  //just so you see how this works
+    
+                                   );
+                                      
+          String tsData = "field1="   //need the length to give to ThingSpeak
+          +             (String)  sensorValue
+      //  +  "&field2=" +(String) sensorValue2  //you are not meant to uderstand this
+    
+        ; 
+
+
+          client.print("POST /update HTTP/1.1\n");  
+          client.print("Host: api.thingspeak.com\n");
+          client.print("Connection: close\n");
+          client.print("X-THINGSPEAKAPIKEY: " + apiKey + "\n");
+          client.print("Content-Type: application/x-www-form-urlencoded\n");
+          client.print("Content-Length: ");
+          client.print(tsData.length());  //send out data string legth to ts
+          client.print("\n\n");
+          client.print(tsData);
+          client.stop();
+          Serial.println("\nData Sent"); 
+          //delay(1000);
+  }
+
+
+  //minimum things speak read cycle 15 secondss
+  
+}
+
+void printWifiStatus() { //free bonus function
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your WiFi shield's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
+
