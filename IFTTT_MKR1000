@@ -1,0 +1,151 @@
+/*
+ *   This sketch is combined from ADAfruit DHT sensor and tdicola for dht.h library
+ *   Along with some  esp8266 NodeMCU specifics from teos009
+ *  
+ *   https://learn.adafruit.com/dht/overview
+ *   https://gist.github.com/teos0009/acad7d1e54b97f4b2a88
+ */
+
+#include <WiFi101.h>
+#include "DHT.h"
+
+#define DHTPIN 5    // what pin we're connected to, last pin mkr1000
+
+
+// Uncomment whatever DHT sensor type you're using!
+#define DHTTYPE DHT11  // DHT 11
+//#define DHTTYPE DHT21  // DHT 21
+//#define DHTTYPE DHT22  // DHT 22
+
+DHT dht(DHTPIN,DHTTYPE);
+#define WEBSITE  "maker.ifttt.com"
+//const char* host =  "maker.ifttt.com";
+
+
+const char* MY_SSID = "Cascade Cigar WiFi";
+const char* MY_PWD =  "Cascade-Cigar";
+
+const char * EventName = "sensor_update";
+const char * Maker_api_Key =    "3Qybu-TVyQUqHX4BmfPnC";
+
+int status = WL_IDLE_STATUS;
+
+void setup() {
+  //Initialize serial and wait for port to open:
+  Serial.begin(9600);
+  while (!Serial) 
+  {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+
+  // check for the presence of the shield:
+  if (WiFi.status() == WL_NO_SHIELD) {
+    Serial.println("WiFi shield not present");
+    // don't continue:
+    while (true);
+  }
+
+  // attempt to connect to Wifi network:
+  while (status != WL_CONNECTED) 
+  {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(MY_SSID);
+    //Connect to WPA/WPA2 network.Change this line if using open/WEP network
+    status = WiFi.begin(MY_SSID, MY_PWD);
+
+    // wait 10 seconds for connection:
+    delay(10000);
+  }
+  
+  Serial.println("Connected to wifi");
+  printWifiStatus();
+  
+}
+
+
+void loop()
+{
+  // Wait a few seconds between measurements.
+  delay(2000);
+
+  int humidityData = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  int celData = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  int fehrData = dht.readTemperature(true);
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(humidityData) || isnan(celData) || isnan(fehrData))
+  {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // Compute heat index in Fahrenheit (the default)
+  int hifData = dht.computeHeatIndex(fehrData, humidityData);
+  // Compute heat index in Celsius (isFahreheit = false)
+  int hicData = dht.computeHeatIndex(celData, humidityData, false);
+
+  Serial.print("Humidity: ");
+  Serial.print(humidityData);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(celData);
+  Serial.print(" *C ");
+  Serial.print(fehrData);
+  Serial.print(" *F\t");
+  Serial.print("Heat index: ");
+  Serial.print(hifData);
+  Serial.print(" *C ");
+  Serial.print(hicData);
+  Serial.println(" *F\n");
+ Serial.println ((String) EventName );
+
+
+WiFiClient client;
+
+  if (client.connect(WEBSITE, 80))
+    {
+          
+          Serial.println("WiFi Client connected ");
+
+ client.print(String("GET ") +
+"/trigger/" + EventName + "/with/key/" + Maker_api_Key
+       +      "?value1=" + (String) humidityData
+       +      "&value2=" + (String) celData
+       +      "&value3=" + (String) fehrData
+       +      " HTTP/1.1\r\n" 
+       +      "Host: " 
+       +       WEBSITE 
+       +      "\r\n"
+       +      "Connection: close\r\n\r\n"
+       ); //yes we need all these \r\n\r\n
+
+
+
+          delay(20000); // 20 sec delay adjust as you like
+    } //end client connect
+
+  else Serial.print("couldnt connect to IFTTT\n");  //if client connect failed
+ 
+  client.stop();
+}
+
+
+void printWifiStatus() 
+{
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your WiFi shield's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
