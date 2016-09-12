@@ -1,0 +1,257 @@
+/*
+// MKR1000 Sketch for Intial State
+// Thanks to Gaetano Carlucci
+// attributes GaetanoCarlucci and RChloe
+//Modified for ESP8266, MKR100, and Intel Edison by Stephen Borsay
+ */
+
+#include <WiFi101.h>
+#include "DHT.h"
+
+#define DHTPIN 5    // what pin we're connected to, pin1 is last pin
+
+//function Prototypes
+bool postData();
+bool postBucket();
+void printWifiStatus();
+
+
+// Uncomment whatever DHT sensor type you're using!
+#define DHTTYPE DHT11  // DHT 11
+//#define DHTTYPE DHT21  // DHT 21
+//#define DHTTYPE DHT22  // DHT 22
+
+DHT dht(DHTPIN,DHTTYPE); //Instantiate DHT object
+WiFiClient client;  //Instantiate WiFi object
+
+
+const char* MY_SSID = "<YOUR_SSID>";
+const char* MY_PWD =  "<YOUR_PASSWORD>";
+
+
+////////////////////////////
+// Initial State Streamer //
+////////////////////////////
+ 
+// Data destination
+// https can't be handled by the ESP8266, thus "insecure"
+#define ISDestURL "insecure-groker.initialstate.com"
+// Bucket key (hidden reference to your bucket that allows appending):
+#define bucketKey "<YOUR_BUCKET_KEY>"
+// Bucket name (name your data will be associated with in Initial State):
+#define bucketName "any_bucketName>"   //"Arduino Stream"
+// Access key (the one you find in your account settings):
+#define accessKey "<YOUR_API_ACCESS_KEY>"
+
+// How many signals are in your stream? You can have as few or as many as you want
+const int NUM_SIGNALS = 5; //for our dht we use 5 data sensors
+
+// What are the names of your signals (i.e. "Temperature", "Humidity", etc.)
+String signalName[NUM_SIGNALS] = {"Humidity", "Temperature(Cel)",
+                   "Temperature(Fehr)","Heat Index(Cel)","Heat Index(Fehr)"};
+
+// This array is to store our signal data later
+String signalData[NUM_SIGNALS];
+
+int status = WL_IDLE_STATUS;
+
+
+void setup() 
+{
+  
+  //Initialize serial and wait for port to open:
+  Serial.begin(9600);
+  while (!Serial) 
+  {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+
+  // check for the presence of the shield:
+  if (WiFi.status() == WL_NO_SHIELD)
+  {
+    Serial.println("WiFi shield not present");
+    // don't continue:
+    while (true);
+  }
+
+  // attempt to connect to Wifi network:
+  while (status != WL_CONNECTED) 
+  {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(MY_SSID);
+    //Connect to WPA/WPA2 network.Change this line if using open/WEP network
+    status = WiFi.begin(MY_SSID, MY_PWD);
+
+    // wait 10 seconds for connection:
+    delay(10000);
+  }
+  
+  Serial.println("Connected to wifi");
+  printWifiStatus();
+  
+}
+
+void loop() {
+
+
+
+  // if there's incoming data from the net connection.
+  // send it out the serial port.  This is for debugging
+  // purposes only:
+  if (client.available()) 
+  {
+    char c = client.read();
+    Serial.write(c);
+  }
+
+
+  //MKR1000 has problems with floats
+  //see my github for int to float rough string handler
+  //https://github.com/sborsay/Arduino_Wireless/blob/master/MKR1000_to_thingspea   //k_FloatStringHandler
+    
+    int h = dht.readHumidity();
+    // Read temperature as Celsius (the default)
+    int t = dht.readTemperature();
+    // Read temperature as Fahrenheit (isFahrenheit = true)
+    int f = dht.readTemperature(true);
+  
+    // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t) || isnan(f))
+  {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // Compute heat index in Fahrenheit (the default)
+  int hif = dht.computeHeatIndex(f, h);
+  // Compute heat index in Celsius (isFahreheit = false)
+  int hic = dht.computeHeatIndex(t, h, false);
+
+  Serial.print("Humidity: ");
+  Serial.print(h);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(t);
+  Serial.print(" *C ");
+  Serial.print(f);
+  Serial.print(" *F\t");
+  Serial.print("Heat index: ");
+  Serial.print(hic);
+  Serial.print(" *C ");
+  Serial.print(hif);
+  Serial.println(" *F\n");
+
+  //fill our array with each sensor element strings casted from floats
+   signalData[0] = (String) h;
+   signalData[1] = (String) t;
+   signalData[2] = (String) f;
+   signalData[3] = (String) hic;
+   signalData[4] = (String) hif;
+ 
+
+  // The postData() function streams our events
+  while(!postData());   
+ 
+  // Wait for 1 seconds before collecting and sending the next batch
+  delay(1000);
+
+}
+
+// this method makes a HTTP connection to the server and creates a bucket if it //does not exist:
+bool postBucket() {
+  // close any connection before send a new request.
+  // This will free the socket on the WiFi shield
+  client.stop();
+
+  // if there's a successful connection:
+  if (client.connect(ISDestURL, 80)) {
+    Serial.println("connecting...");
+    // send the HTTP PUT request:
+    // Build HTTP request.
+    String toSend = "POST /api/buckets HTTP/1.1\r\n";
+    toSend += "Host:";
+    toSend += ISDestURL;
+    toSend += "\r\n" ;
+    toSend += "User-Agent:Arduino\r\n";
+    toSend += "Accept-Version: ~0\r\n";
+    toSend += "X-IS-AccessKey: " accessKey "\r\n";
+    toSend += "Content-Type: application/json\r\n";
+    String payload = "{\"bucketKey\": \"" bucketKey "\","; 
+    payload += "\"bucketName\": \"" bucketName "\"}";
+    payload += "\r\n"; 
+    toSend += "Content-Length: "+String(payload.length())+"\r\n";
+    toSend += "\r\n";
+    toSend += payload;
+    
+    client.println(toSend);
+    Serial.println(toSend);
+  
+    return true;
+  } else {
+    // if you couldn't make a connection:
+    Serial.println("connection failed");
+    return false;
+  }
+}
+
+
+// this method makes a HTTP connection to the server and sends the signals measured:
+bool postData() {
+  // close any connection before send a new request.
+  // This will free the socket on the WiFi shield
+  client.stop();
+
+  // if there's a successful connection:
+  if (client.connect(ISDestURL, 80)) {
+    Serial.println("connecting...");
+    // send the HTTP PUT request:
+    // Build HTTP request.
+    // Build HTTP request.
+
+  for (int i=0; i<NUM_SIGNALS; i++){
+    String toSend = "POST /api/events HTTP/1.1\r\n";
+    toSend += "Host:";
+    toSend += ISDestURL;
+    toSend += "\r\n" ;
+    toSend += "Content-Type: application/json\r\n";
+    toSend += "User-Agent: Arduino\r\n";
+    toSend += "Accept-Version: ~0\r\n";
+    toSend += "X-IS-AccessKey:  " accessKey "\r\n";
+    toSend += "X-IS-BucketKey:  " bucketKey "\r\n";
+    
+    String payload = "[{\"key\": \"" + signalName[i] + "\", "; 
+    payload +="\"value\": \"" + signalData[i] + "\"}]\r\n";
+    
+    toSend += "Content-Length: "+String(payload.length())+"\r\n";
+    toSend += "\r\n";
+    toSend += payload;
+ 
+    Serial.println(toSend);
+    client.println(toSend);
+    delay(3000);//so not to overload requests on Intialstate, adjust as needed
+   }
+  return true;
+  } else {
+    // if you couldn't make a connection:
+    Serial.println("connection failed");
+    return false;
+  }
+ 
+}
+
+void printWifiStatus() {
+  // print the SSID of the network you're attached to:
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your WiFi shield's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  // print the received signal strength:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
