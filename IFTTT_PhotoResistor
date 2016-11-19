@@ -1,0 +1,100 @@
+/* Simple test of the functionality of the photo resistor
+
+Connect the photoresistor one leg to pin 0, and pin to +5V
+Connect a resistor (around 10k is a good value, higher
+values gives higher readings) from pin 0 to GND. (see appendix of arduino notebook page 37 for schematics).
+
+----------------------------------------------------
+
+           PhotoR     10K
+ +5    o---/\/\/--.--/\/\/---o GND
+                  |
+ Pin 0 o-----------
+
+----------------------------------------------------
+*/
+
+
+
+#include "ESP8266WiFi.h"
+//#include "DHT.h"
+//#define Photo_Pin A0  // what digital pin we're connected to  pin2 to  D4 on esp board
+
+int PhotoR_Pin = A0;
+
+#define WEBSITE  "maker.ifttt.com"
+
+
+const char *  MY_SSID = <your_SSID>";
+const char *  MY_PWD  = "<YOur_PAssword>";
+
+const char * EventName = "<Your event name>";
+const char * apiKey =    "<Your AapiKey from IFTTT>";
+
+void setup()
+{
+  Serial.begin(115200);
+  Serial.print("Connecting to "+*MY_SSID);
+  WiFi.begin(MY_SSID, MY_PWD);
+
+  while (WiFi.status() != WL_CONNECTED) //not connected,  ...waiting to connect
+    {
+      delay(1000);
+      Serial.print(".");
+    }
+
+  Serial.println("");
+  Serial.println("Credentials accepted! Connected to wifi\n ");
+  Serial.println("");
+}
+
+
+void loop()
+{
+  // Wait a few seconds between measurements.
+  delay(2000);
+  Serial.println ((String) EventName );
+  float PhotoR = analogRead(PhotoR_Pin);
+  Serial.println(analogRead(PhotoR_Pin));          //Write the value of the photoresistor 
+                                                   //to the serial monitor.
+                                                
+
+WiFiClient client;
+
+  if (client.connect(WEBSITE, 80))
+    {
+          Serial.println("WiFi Client connected ");
+
+
+ client.print(String("POST ") +
+ "/trigger/<your_eventname_explicit>/with/key/<your_API_KEY_explicit>?value1="
+       +                   (String)  PhotoR
+//       +      "&value2=" + (String) t
+//       +      "&value3=" + (String) f
+//       +    "&Value4=" + (String) hic
+//       +    "&Value5=" + (String) hif
+
+         + " HTTP/1.1\r\n" +
+           "Host: " + WEBSITE + "\r\n" +
+          // "Connection: close\r\n\r\n");
+          "Content-Type: application/x-www-form-urlencoded\r\n\r\n");
+
+             
+   while(client.available()) 
+   {
+    String line = client.readStringUntil('\r');
+    Serial.print(line);
+  }
+
+
+
+          delay(20000);
+    } //end client connect
+
+  else Serial.print("couldnt connect to IFTTT\n");  //if client connect failed
+ 
+  client.stop();
+}
+
+
+
