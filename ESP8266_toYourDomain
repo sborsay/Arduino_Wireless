@@ -1,14 +1,14 @@
+
 /*
-  ESP8266: send data to your Domain (or mine:
-  Embedded-iot.net/dht11/dataCollector.php)
+  ESP8266: send data to your Domain (or mine: Embedded-iot.net/dht11/dataCollector.php)(
 
   Uses POST command to send DHT data to a designated website
   The circuit:
   * DHT
   * Post to Domain
 
-   Computer Engineer: Stephen Borsay
-   Embedded-iot.net
+   Stephen Borsay
+   Homepage: Embedded-iot.net
    www.udemy.com/all-about-arduino-wireless
    https://www.hackster.io/detox
    https://github.com/sborsay/Arduino_Wireless
@@ -16,7 +16,7 @@
 
 #include "ESP8266WiFi.h"
 #include "DHT.h"
-#define DHTPIN 2    //what pin we're connected to:  pin2 to D4 on esp board
+#define DHTPIN 2    // what digital pin we're connected to  pin2 to D4 on esp board
 
 // Uncomment whatever DHT sensor type you're using!
 #define DHTTYPE DHT11  // DHT 11
@@ -25,10 +25,8 @@
 
 DHT dht(DHTPIN,DHTTYPE);
 
-const char server[] = "YOUR_TOPLEVEL_DOMAIN_HERE"; // embedded-iot.net
-
-const char* MY_SSID = "YOUR_WIFI_NETWORK_NAME_HERE";
-const char* MY_PWD =  "YOUR_PASSOWRD_HERE";
+const char* MY_SSID = "YOUR_SSID_WiFi";
+const char* MY_PWD =  "YOUR_WiFi_PASSWORD";
 
 WiFiClient client;
 
@@ -58,7 +56,6 @@ void loop() {
   delay(2000);
 
   //prefer to use float, but package size or float conversion isnt working
-  //for MKR1000 if using ESP8266 float type should be fine
   //will revise in future with a string fuction or float conversion function
 
   int Humidity = dht.readHumidity();
@@ -106,10 +103,8 @@ void loop() {
           +  "&HeatIndex_Cel="    +(String) HeatIndex_Cel
           +  "&HeatIndex_Fehr="   +(String) HeatIndex_Fehr;
 
-   //client.println("POST /dht11/dataCollector.php HTTP/1.1");
-     client.println("POST /YOUR_SUBDOMAIN/YOUR_PHP_PAGE.php HTTP/1.1");
-   //client.print("Host: embedded-iot.net\n"); 
-     client.print("Host: YOUR_TOPLEVEL_DOMAIN_HERE\n");
+     client.println("POST /dht11/dataCollector.php HTTP/1.1"); //change this if using your Sub-domain
+     client.print("Host: embedded-iot.net\n");                 //change this if using your Domain
      client.println("User-Agent: ESP8266/1.0");
      client.println("Connection: close"); 
      client.println("Content-Type: application/x-www-form-urlencoded");
@@ -128,6 +123,7 @@ void loop() {
     } 
 
 }
+
 
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
