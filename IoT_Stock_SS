@@ -1,0 +1,124 @@
+#include <ESP8266WiFi.h>
+#include <Servo.h> 
+ 
+Servo myservo;
+
+const char* ssid     = "YOUR_SSID"; //Wi-Fi SSID
+const char* password = "YOUR_PASSWORD"; //Wi-Fi Password
+
+//Only used if using Static IP
+//IPAddress ip(192, 168, 0, 6); //IP
+//IPAddress gatewayDNS(192, 168, 0, 1);//DNS and Gewateway
+//IPAddress netmask(255, 255, 255,0); //Netmask
+
+//Server IP or domain name
+const char* host = "www.google.com";//"192.168.0.1";
+
+void setup() {
+  
+ // myservo.attach(2);
+  pinMode(5, OUTPUT);
+  Serial.begin(115200);
+  delay(10);
+
+  // We start by connecting to a WiFi network
+
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  //WiFi.config(ip,gatewayDNS,netmask,gatewayDNS); //Only used if using Static IP 
+  WiFi.begin(ssid, password); //Connecting to the network
+  
+  while (WiFi.status() != WL_CONNECTED) { //Wait till connects
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");  
+  Serial.println("IP address: ");
+  //Serial.println(WiFi.localIP()); //Use if using DHCP to know the IP
+}
+
+void loop() {
+  delay(5000);
+
+  Serial.print("connecting to ");
+  Serial.println(host);
+
+  int pos; //servo posotion 
+  WiFiClient client; //Client to handle TCP Connection
+  const int httpPort = 80;
+  if (!client.connect(host, httpPort)) { //Connect to server using port httpPort
+    Serial.println("connection failed");
+    return;
+  }
+  
+  // We now create a URI for the request
+  //File or Server page you want to communicate with. along with data
+  //Serial.print(result);
+  String url = "/finance/info?q=INDEXDJX:DJI";  //"/test/hello.php?data1=787348&data2=7387"; 
+  
+  // This will send the request to the server 
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" + 
+               "Connection: close\r\n\r\n");
+
+// find nd parse
+if(client.find("cp"))
+{
+  Serial.print("found cp");
+  float result = client.parseFloat();
+  Serial.print("cp = ");
+  Serial.print(result);
+  Serial.println(" is the cp now");
+
+    if(result > 0)
+    {
+
+      for (int i=0; i<6; i++) {
+      digitalWrite(5, LOW);
+      delay(100);
+      digitalWrite(5, HIGH);
+      }
+      myservo.attach(2);
+      myservo.write(1); // sets the servo position according to the scaled value
+      delay(1000); // waits for it to get to the position
+      myservo.detach();
+      delay(1000);     
+    }
+
+    else{
+      digitalWrite(5, LOW);
+      myservo.attach(2);  // attaches the servo on pin 9 to the servo object
+      delay(15);
+      myservo.write(179);// sets the servo position according to the scaled value
+      delay(1000); // waits for it to get to the position
+      myservo.detach();
+      delay(1000);          
+    }
+
+
+ }
+else Serial.print("didnt find c_fix");
+
+               
+  unsigned long timeout = millis();
+  while (client.available() == 0) {
+    if (millis() - timeout > 25000) { //Try to fetch response for 25 seconds
+      Serial.println(">>> Client Timeout !");
+      client.stop();
+      return;
+    }
+  }
+  
+  // Read all the lines of the reply from server and print them to Serial
+  while(client.available()){
+    String line = client.readStringUntil('\r');
+    Serial.print(line);
+  }
+  Serial.println();
+  Serial.println("closing connection");
+  client.stop(); //Close Connection
+}
