@@ -25,6 +25,8 @@
 
 DHT dht(DHTPIN,DHTTYPE);
 
+const char server[] = "embedded-iot.net"; 
+
 const char* MY_SSID = "YOUR_SSID_WiFi";
 const char* MY_PWD =  "YOUR_WiFi_PASSWORD";
 
