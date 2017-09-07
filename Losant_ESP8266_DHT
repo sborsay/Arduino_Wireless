@@ -86,7 +86,7 @@ void connect() {
   /* Create JSON payload to sent to Losant
    *
    *   {
-   *     "deviceId": "575ecf887ae143cd83dc4aa2",
+   *     "deviceId": "YOUR_DEV_ID",
    *     "key": "this_would_be_the_key",
    *     "secret": "this_would_be_the_secret"
    *   }
