@@ -100,7 +100,7 @@ void loop() {
   if(!client.connected()){
       client.reconnect();
       client.ubidotsSubscribe("YOUR_DEVICE_NAME","temperature"); //Insert the dataSource and Variable's Labels
-      client.ubidotsSubscribe("YOUR_DEVICE_NAME","humidity"); //Insert the dataSource and Variable's Labels
+      client.ubidotsSubscribe("YOUR_DEVICE_NAME","humidity"); //Insert the dataSource and Variable's Labels.
       }
 // float sensorValue = analogRead(sensor);
 
