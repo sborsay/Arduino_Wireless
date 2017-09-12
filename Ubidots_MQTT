@@ -21,10 +21,7 @@
 
 Ubidots client(TOKEN, MQTTCLIENTNAME);
 
-#define DHTPIN 2     // what digital pin the DHT22 is conected to
-#define DHTTYPE DHT11   // There are multiple kinds of DHT sensors
 DHT dht(DHTPIN,DHTTYPE);
-
 
 /****************************************
 * Auxiliar Functions
