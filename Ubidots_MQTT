@@ -17,11 +17,12 @@
 #define WIFINAME "YOUR WiFi" //Your SSID
 #define WIFIPASS "YOUR PASSWORD" // Your Wifi Pass
 #define MQTTCLIENTNAME "MAKE UP A UNIQUE CLIENT" //Your MQTT Client Name. Please refer to README at github.com/ubidots-mqtt-esp to know how to build this name
-#define pin 2 // D4 on the ESP8266
-
-
+#define DHTPIN 2 // D4 on the ESP8266
 
 Ubidots client(TOKEN, MQTTCLIENTNAME);
+
+#define DHTPIN 2     // what digital pin the DHT22 is conected to
+#define DHTTYPE DHT11   // There are multiple kinds of DHT sensors
 DHT dht(DHTPIN,DHTTYPE);
 
 
