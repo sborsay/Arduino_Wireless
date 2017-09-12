@@ -1,0 +1,88 @@
+#include "UbidotsMicroESP8266.h"
+#include <SoftwareSerial.h> 
+#include "DHT.h"
+
+
+#define SSID "YOUR WiFi"
+#define PASS "YOUR PW"
+
+
+#define TOKEN "YOUR TOKEN"
+#define ID  "YOUR VARIABLE ID " // Replace it with your Ubidots' variable ID
+#define ID2 "IF YOU HAVE A 2ND VARIABLE YOU ARE TRACKING" 
+#define ID3 "Your_id3_here"
+#define ID4 "Your_id4_here" 
+
+#define DHTPIN 2    // what digital pin we're connected to  pin2 to  D4 on esp board
+#define DHTTYPE DHT11   // There are multiple kinds of DHT sensors
+
+Ubidots client(TOKEN);
+DHT dht(DHTPIN,DHTTYPE);
+
+void setup() {
+  Serial.begin(9600);
+  client.wifiConnection(SSID,PASS);
+  pinMode(DHTPIN, OUTPUT);
+}
+
+
+void loop() {
+
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  float f = dht.readTemperature(true);
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t) || isnan(f))
+  {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // Compute heat index in Fahrenheit (the default)
+  float hif = dht.computeHeatIndex(f, h);
+  // Compute heat index in Celsius (isFahreheit = false)
+  float hic = dht.computeHeatIndex(t, h, false);
+
+  Serial.print("Humidity: ");
+  Serial.print(h);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(t);
+  Serial.print(" *C ");
+  Serial.print(f);
+  Serial.print(" *F\t");
+  Serial.print("Heat index: ");
+  Serial.print(hic);
+  Serial.print(" *C ");
+  Serial.print(hif);
+  Serial.println(" *F\n");
+
+  client.add(ID,h);
+  client.add(ID2,t);
+ // client.add(ID3,value3);
+ // client.add(ID4,value4);
+  client.sendAll();
+}
+
+  Serial.print(h);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(t);
+  Serial.print(" *C ");
+  Serial.print(f);
+  Serial.print(" *F\t");
+  Serial.print("Heat index: ");
+  Serial.print(hic);
+  Serial.print(" *C ");
+  Serial.print(hif);
+  Serial.println(" *F\n");
+
+  client.add(ID,h);
+  client.add(ID2,t);
+ // client.add(ID3,value3);
+ // client.add(ID4,value4);
+  client.sendAll();
+}
