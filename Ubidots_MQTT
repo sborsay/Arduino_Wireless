@@ -1,0 +1,112 @@
+/****************************************
+* Include Libraries
+****************************************/
+#include "UbidotsESPMQTT.h"
+#include "DHT.h"
+#define DHTPIN 2    // what digital pin we're connected to  pin2 to  D4 on esp board
+
+// Uncomment whatever DHT sensor type you're using!
+#define DHTTYPE DHT11  // DHT 11
+//#define DHTTYPE DHT21  // DHT 21
+//#define DHTTYPE DHT22  // DHT 22
+
+/****************************************
+* Define Constants
+****************************************/
+#define TOKEN "Your Ubidots TOKEN" // Your Ubidots TOKEN
+#define WIFINAME "YOUR WiFi" //Your SSID
+#define WIFIPASS "YOUR PASSWORD" // Your Wifi Pass
+#define MQTTCLIENTNAME "MAKE UP A UNIQUE CLIENT" //Your MQTT Client Name. Please refer to README at github.com/ubidots-mqtt-esp to know how to build this name
+#define pin 2 // D4 on the ESP8266
+
+
+
+Ubidots client(TOKEN, MQTTCLIENTNAME);
+DHT dht(DHTPIN,DHTTYPE);
+
+
+/****************************************
+* Auxiliar Functions
+char by char call back message from server delivered via pub-sub defined payload
+****************************************/
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i=0;i<length;i++) {
+    Serial.print((char)payload[i]);
+  }
+  if ((char)payload[0]=='1'){
+    digitalWrite(BUILTIN_LED, HIGH);
+  }
+  else{
+    digitalWrite(BUILTIN_LED, LOW);
+  }
+  Serial.println();
+}
+
+/****************************************
+* Main Functions
+****************************************/
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  client.wifiConnection(WIFINAME, WIFIPASS);
+  client.begin(callback);
+  //pinMode(sensor, INPUT);
+  pinMode(pin, OUTPUT);
+  client.ubidotsSubscribe("YOUR_DEVICE_NAME","temperature"); //Insert the dataSource and Variable's Labels
+  client.ubidotsSubscribe("YOUR_DEVICE_NAME","humidity"); //Insert the dataSource and Variable's Labels
+  }
+
+void loop() {
+
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  float f = dht.readTemperature(true);
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t) || isnan(f))
+  {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // Compute heat index in Fahrenheit (the default)
+  float hif = dht.computeHeatIndex(f, h);
+  // Compute heat index in Celsius (isFahreheit = false)
+  float hic = dht.computeHeatIndex(t, h, false);
+
+  Serial.print("Humidity: ");
+  Serial.print(h);
+  Serial.print(" %\t");
+  Serial.print("Temperature: ");
+  Serial.print(t);
+  Serial.print(" *C ");
+  Serial.print(f);
+  Serial.print(" *F\t");
+  Serial.print("Heat index: ");
+  Serial.print(hic);
+  Serial.print(" *C ");
+  Serial.print(hif);
+  Serial.println(" *F\n");
+
+
+  // put your main code here, to run repeatedly:
+  if(!client.connected()){
+      client.reconnect();
+      client.ubidotsSubscribe("YOUR_DEVICE_NAME","temperature"); //Insert the dataSource and Variable's Labels
+      client.ubidotsSubscribe("YOUR_DEVICE_NAME","humidity"); //Insert the dataSource and Variable's Labels
+      }
+// float sensorValue = analogRead(sensor);
+
+  client.add("temperature", t);
+  client.add("humidity", h);
+  client.ubidotsPublish("YOUR_DEVICE_NAME");
+  delay(2000);
+  client.loop();
+  }
