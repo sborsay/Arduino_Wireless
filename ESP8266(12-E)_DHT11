@@ -8,7 +8,7 @@
 
 #include "ESP8266WiFi.h"
 #include "DHT.h"
-#define DHTPIN 2    // what digital pin we're connected to  pin2 to  D4 on esp board
+#define DHTPIN 2    // what digital pin we're connected to  GPIO4 which is D2 on ESP8266 12-E board
 
 // Uncomment whatever DHT sensor type you're using!
 #define DHTTYPE DHT11  // DHT 11
